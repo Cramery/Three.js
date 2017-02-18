@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Move Camera</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="container"></div>
+
+		<script src="../js/three.min.js"></script>
+		<script src="../js/TrackballControls.js"></script>
+		<script src="../js/stats.min.js"></script>
+
+		<script>
+
+			var camera, scene, renderer;
+			var cube, geometry1;
+
+			var raycaster;
+			var mouse;
+			var objects = [];
+
+			init();
+			animate();
+
+			function init() {
+
+				raycaster = new THREE.Raycaster();
+				mouse = new THREE.Vector2();
+				
+				camera = new THREE.PerspectiveCamera(75, window.innerWidth /     window.innerHeight, 1, 10000);
+				camera.position.z = 1000;
+
+				scene = new THREE.Scene();
+
+				geometry1 = new THREE.BoxGeometry( 200, 200, 200 );
+
+				material = new THREE.MeshBasicMaterial({
+					color: 0x000000,
+				});
+
+				cube = new THREE.Mesh(geometry1, material);
+				cube.position.set(-100,400,0);				
+				scene.add(cube);
+
+				renderer = new THREE.WebGLRenderer({antialias:true});
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				renderer.setClearColor( 0xffffff, 1);
+				document.body.appendChild(renderer.domElement);
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function animate() {
+				requestAnimationFrame(animate);
+				renderer.render(scene, camera);
+			}
+
+			var projector = new THREE.Projector();
+
+			function onDocumentMouseDown( event ) {
+
+				event.preventDefault();
+
+				mouse.x = ( event.clientX / renderer.domElement.width ) * 2 - 1;
+				mouse.y = - ( event.clientY / renderer.domElement.height ) * 2 + 1;
+				
+				raycaster.setFromCamera( mouse, camera );
+				
+				var intersects = raycaster.intersectObjects( [cube] );
+				
+				if ( intersects.length > 0 ) {
+					console.log(intersects[ 0 ].object)
+					intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );					
+				}
+			}
+			
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+
+		</script>
+	</body>
+</html>

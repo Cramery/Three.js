@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Move Camera</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="container"></div>
+
+		<script src="../js/three.min.js"></script>
+		<script src="../js/TrackballControls.js"></script>
+		<script src="../js/stats.min.js"></script>
+
+		<script>
+
+			var container, stats;
+			var camera, controls, scene, renderer;
+			var pickingData = [], pickingTexture, pickingScene;
+
+			var mouse = new THREE.Vector2();
+			var offset = new THREE.Vector3( 10, 10, 10 );
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.getElementById( "container" );
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 1000;
+
+				controls = new THREE.TrackballControls( camera );
+				controls.rotateSpeed = 5.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+				controls.noZoom = false;
+				controls.noPan = false;
+				controls.staticMoving = true;
+				controls.dynamicDampingFactor = 0.3;
+
+				scene = new THREE.Scene();
+
+				pickingScene = new THREE.Scene();
+				pickingTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
+				pickingTexture.minFilter = THREE.LinearFilter;
+				pickingTexture.generateMipmaps = false;
+
+				scene.add( new THREE.AmbientLight( 0x555555 ) );
+
+				var light = new THREE.SpotLight( 0xffffff, 1.5 );
+				light.position.set( 0, 500, 2000 );
+				scene.add( light );		
+
+				function applyVertexColors( g, c ) {
+					g.faces.forEach( function( f ) {
+						var n = ( f instanceof THREE.Face3 ) ? 3 : 4;
+
+						for( var j = 0; j < n; j ++ ) {
+							f.vertexColors[ j ] = c;
+						}
+					} );
+				}			
+
+				//Cube
+				var cube = new THREE.Mesh(new THREE.BoxGeometry(200, 200, 200), new THREE.MeshLambertMaterial({
+					color: 0x555555
+				  }));
+				  cube.position.set(200,200,200);
+				  scene.add(cube);						
+				//Cube
+				  
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setClearColor( 0xffffff );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.sortObjects = false;
+				container.appendChild( renderer.domElement );				
+
+				renderer.domElement.addEventListener( 'mousemove', onMouseMove );
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+			
+			function onMouseMove( e ) {
+				mouse.x = e.clientX;
+				mouse.y = e.clientY;
+			}
+			
+			function animate() {
+				requestAnimationFrame( animate );
+				render();
+				stats.update();
+			}
+
+			function pick() {
+
+				//render the picking scene off-screen
+				renderer.render( pickingScene, camera, pickingTexture );
+
+				//create buffer for reading single pixel
+				var pixelBuffer = new Uint8Array( 4 );
+
+				//read the pixel under the mouse from the texture
+				renderer.readRenderTargetPixels(pickingTexture, mouse.x, pickingTexture.height - mouse.y, 1, 1, pixelBuffer);
+
+				//interpret the pixel as an ID
+				var id = ( pixelBuffer[0] << 16 ) | ( pixelBuffer[1] << 8 ) | ( pixelBuffer[2] );
+				var data = pickingData[ id ];
+			}
+
+			function render() {
+				controls.update();
+				pick();
+				renderer.render( scene, camera );
+			}
+
+		</script>
+	</body>
+</html>
